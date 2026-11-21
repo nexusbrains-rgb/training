@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>受講ポータル</title>
+<style>
+:root{
+  --bg:#ffffff; --ink:#0e1620; --muted:#5c6b7a; --line:#e6eaee;
+  --surface:#f5f8fa; --primary:#1493DA; --primary-d:#0d6fa8; --accent:#EF3E77;
+  --radius:14px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink)}
+body{
+  font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic","Meiryo",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  -webkit-font-smoothing:antialiased;line-height:1.6;
+}
+#app{max-width:1080px;margin:0 auto;padding:0 20px 64px;min-height:100vh}
+.center{text-align:center}.muted{color:var(--muted)}.sm{font-size:13px}
+a{color:var(--primary)}
+
+/* header */
+.header{display:flex;align-items:center;justify-content:space-between;padding:20px 0 16px}
+.brand{display:flex;align-items:center;gap:10px}
+.mark{width:22px;height:22px;border-radius:6px;background:var(--primary);box-shadow:inset 0 0 0 4px #fff,0 0 0 2px var(--primary)}
+.brand-name{font-weight:700;font-size:18px;letter-spacing:.02em}
+.header-right{display:flex;align-items:center;gap:12px}
+.who{color:var(--muted);font-size:13px}
+
+/* progress */
+.progress-wrap{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;margin-bottom:22px}
+.progress-label{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--muted);margin-bottom:8px}
+.progress-label strong{color:var(--ink);font-size:14px}
+.bar{height:8px;background:#e3e9ee;border-radius:99px;overflow:hidden}
+.bar-fill{height:100%;background:var(--primary);border-radius:99px;transition:width .4s ease}
+
+/* grid + cards */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:18px}
+.card{text-align:left;padding:0;border:1px solid var(--line);background:#fff;border-radius:var(--radius);overflow:hidden;cursor:pointer;transition:transform .15s,box-shadow .15s,border-color .15s;font:inherit;color:inherit;width:100%}
+.card:hover{transform:translateY(-3px);box-shadow:0 10px 24px rgba(20,147,218,.12);border-color:#cfe6f6}
+.card:focus-visible{outline:3px solid var(--primary);outline-offset:2px}
+.thumb{position:relative;aspect-ratio:16/9;background:#0e1620;overflow:hidden}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb-fallback{width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0e1620,#22303c);color:#8fa6b6;font-weight:700;letter-spacing:.1em}
+.play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.92);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:16px;padding-left:3px;box-shadow:0 4px 14px rgba(0,0,0,.25);transition:transform .15s}
+.card:hover .play{transform:translate(-50%,-50%) scale(1.08)}
+.viewed-tag{position:absolute;left:10px;top:10px;background:var(--primary);color:#fff;font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px}
+.card-body{padding:12px 14px 14px}
+.card-title{margin:0 0 10px;font-size:15px;line-height:1.45;font-weight:600;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card-meta{display:flex;align-items:center;justify-content:space-between}
+.provider{font-size:12px;color:var(--muted)}
+.count-badge{display:inline-flex;align-items:center;gap:5px;background:#fdeaf1;color:var(--accent);font-weight:700;font-size:13px;padding:4px 10px;border-radius:99px}
+.count-badge.lg{font-size:14px;padding:6px 14px}
+.count-badge.sm{font-size:12px;padding:3px 9px}
+
+/* player */
+.player-view{max-width:860px;margin:0 auto}
+.back{margin-bottom:14px}
+.player-frame{position:relative;padding-top:56.25%;background:#000;border-radius:var(--radius);overflow:hidden;border:1px solid var(--line)}
+.player-frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.player-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:16px 0 4px;flex-wrap:wrap}
+.player-title{margin:0;font-size:20px;font-weight:700}
+
+/* empty / auth */
+.empty,.auth-box{max-width:440px;margin:56px auto;text-align:center}
+.empty-mark{width:60px;height:60px;border-radius:16px;background:var(--surface);border:1px dashed #c7d2db;color:var(--primary);font-size:30px;display:flex;align-items:center;justify-content:center;margin:0 auto 18px}
+.empty h2,.auth-box h2{margin:0 0 8px;font-size:20px}
+.auth-box .card-panel{border:1px solid var(--line);border-radius:var(--radius);padding:24px;text-align:left;margin-top:20px}
+
+/* buttons + inputs */
+.btn{font:inherit;font-weight:600;border-radius:10px;padding:10px 18px;cursor:pointer;border:1px solid transparent;transition:background .15s,border-color .15s,color .15s}
+.btn:focus-visible{outline:3px solid var(--primary);outline-offset:2px}
+.btn:disabled{opacity:.55;cursor:default}
+.btn.sm{padding:7px 13px;font-size:13px}
+.btn.primary{background:var(--primary);color:#fff}
+.btn.primary:hover:not(:disabled){background:var(--primary-d)}
+.btn.ghost{background:#fff;border-color:var(--line);color:var(--ink)}
+.btn.ghost:hover{border-color:var(--primary);color:var(--primary)}
+.btn.block{width:100%}
+.input{width:100%;font:inherit;padding:11px 13px;border:1px solid var(--line);border-radius:10px;background:#fff;margin:6px 0}
+.input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(20,147,218,.15)}
+.err{color:var(--accent);font-size:13px;margin:6px 0}
+.ok{color:var(--primary-d);font-size:13px;margin:6px 0}
+.hint{font-size:12px;color:var(--muted);margin-top:12px}
+
+/* modal */
+.overlay{position:fixed;inset:0;background:rgba(14,22,32,.45);display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto;z-index:50}
+.modal{background:#fff;border-radius:16px;padding:24px;width:100%;max-width:640px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.modal.narrow{max-width:420px}
+.modal-title{margin:0 0 6px;font-size:19px}
+.modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+.admin-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.admin-section{border-top:1px solid var(--line);padding-top:18px;margin-top:18px}
+.admin-section:first-of-type{border-top:0;padding-top:6px;margin-top:8px}
+.admin-section h3{margin:0 0 8px;font-size:15px}
+.admin-section .btn{margin-top:8px}
+.admin-list{list-style:none;margin:0;padding:0}
+.admin-list li{padding:8px 0;border-bottom:1px solid var(--line)}
+.row{display:flex;align-items:center;gap:12px}
+.row-title{flex:1;font-size:14px}
+.link{background:none;border:0;color:var(--primary);font:inherit;font-size:13px;cursor:pointer;padding:2px 4px}
+.link:hover{text-decoration:underline}.link.danger{color:var(--accent)}
+.names{display:flex;flex-wrap:wrap;gap:6px;padding:8px 0 2px}
+.chip{background:var(--surface);border:1px solid var(--line);border-radius:99px;padding:3px 11px;font-size:12px}
+.setup-warn{margin:40px auto;max-width:560px;background:#fff7e6;border:1px solid #ffe0a3;color:#8a5a00;border-radius:12px;padding:18px 20px}
+.setup-warn code{background:#fff;padding:1px 6px;border-radius:5px}
+
+@media (max-width:520px){#app{padding:0 14px 48px}.grid{grid-template-columns:1fr 1fr;gap:12px}}
+/* dashboard */
+.dash-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:8px}
+.dash-title{font-size:20px;font-weight:700;margin:0}
+.stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+.stat-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 16px}
+.stat-label{font-size:12px;color:var(--muted);margin-bottom:4px}
+.stat-num{font-size:26px;font-weight:700;line-height:1}
+.stat-unit{font-size:13px;font-weight:400;color:var(--muted);margin-left:3px}
+.stat-sub{font-size:12px;color:var(--muted);margin-top:4px}
+.filter-tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.ftab{font:inherit;font-size:13px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 12px;cursor:pointer;color:var(--ink)}
+.ftab:hover{border-color:var(--primary)}
+.ftab.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+.dash-table{width:100%;border-collapse:collapse;font-size:13px;min-width:760px}
+.dash-table th{text-align:left;padding:10px 12px;color:var(--muted);font-weight:600;font-size:12px;border-bottom:1px solid var(--line);white-space:nowrap}
+.dash-table td{padding:11px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+.dash-table tbody tr.lrow:hover td{background:#f8fbfd}
+.dash-table .name-cell:hover{color:var(--primary);text-decoration:underline}
+@media print{
+  body>*{display:none!important}
+  .cert-overlay{display:block!important;position:static!important;background:#fff!important;padding:0!important;overflow:visible!important}
+  .cert-overlay .modal{box-shadow:none!important;max-width:none!important;padding:0!important}
+  .cert-overlay .modal-actions{display:none!important}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app"><p class="muted center" style="margin-top:80px">読み込み中…</p></div>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+/* ==========================================================
+   ① ここだけ書き換えてください
+   ========================================================== */
+const SUPABASE_URL      = 'https://eccauezzltweeyqgwqmt.supabase.co'; // Supabase の Project URL
+const SUPABASE_ANON_KEY = 'sb_publishable_k9umF_zB0D3raSVF7mdtKQ_kXFQnlOC'; // Supabase の Publishable key
+const PORTAL_NAME       = '受講ポータル';                      // 画面左上のタイトル（任意）
+/* ========================================================== */
+
+const configured = !SUPABASE_URL.includes('YOUR-PROJECT') && !SUPABASE_ANON_KEY.includes('YOUR-ANON');
+const sb = configured ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+const app = document.getElementById('app');
+const esc = (s) => (s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---- 動画URLの解析 ---- */
+function parseVideo(raw){
+  if(!raw) return null;
+  const url = raw.trim();
+  const yt = url.match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+  if(yt) return {provider:'youtube', video_id:yt[1]};
+  const vm = url.match(/vimeo\.com\/(?:video\/|channels\/[^/]+\/|groups\/[^/]+\/videos\/)?(\d{6,})/);
+  if(vm) return {provider:'vimeo', video_id:vm[1]};
+  return null;
+}
+const embedSrc = (v) => v.provider==='youtube'
+  ? `https://www.youtube.com/embed/${v.video_id}?rel=0&modestbranding=1`
+  : `https://player.vimeo.com/video/${v.video_id}`;
+const thumbSrc = (v) => v.provider==='youtube'
+  ? `https://img.youtube.com/vi/${v.video_id}/hqdefault.jpg` : null;
+
+/* ---- 状態 ---- */
+let me=null, isAdmin=false, myName='', myDept='', myCompany='', videos=[], myViewed=new Set(), myProgress={}, selected=null, track=null, portalDeadline=null, adminCompany='all';
+
+/* ---- 起動 ---- */
+async function init(){
+  if(!configured){ renderSetupNeeded(); return; }
+  sb.auth.onAuthStateChange((_e, session)=> handleSession(session));
+  const { data:{ session } } = await sb.auth.getSession();
+  handleSession(session);
+}
+async function handleSession(session){
+  me = session?.user || null;
+  if(!me){ renderLogin(); return; }
+  await upsertProfile();
+  isAdmin = await checkAdmin();
+  await Promise.all([loadVideos(), loadMyViews(), loadMyName(), loadSettings()]);
+  renderMain();
+}
+async function checkAdmin(){ try{ const {data}=await sb.rpc('is_admin'); return !!data; }catch{ return false; } }
+async function upsertProfile(){ try{ await sb.from('profiles').upsert({user_id:me.id, email:me.email, updated_at:new Date().toISOString()}, {onConflict:'user_id'}); }catch(e){} }
+async function loadMyName(){ try{ const {data}=await sb.from('profiles').select('*').eq('user_id',me.id).single(); myName=data?.display_name||''; myDept=data?.department||''; myCompany=data?.company||''; }catch{ myName=''; myDept=''; myCompany=''; } }
+async function loadSettings(){ try{ const {data}=await sb.from('settings').select('deadline').eq('id',1).single(); portalDeadline=data?.deadline||null; }catch{ portalDeadline=null; } }
+async function loadVideos(){ const {data}=await sb.from('videos').select('*').order('position').order('created_at'); videos=data||[]; }
+async function loadMyViews(){
+  const {data}=await sb.from('views').select('video_id, watched_seconds, duration_seconds, completed').eq('user_id',me.id);
+  myProgress={}; (data||[]).forEach(r=>{ myProgress[r.video_id]={ watched:r.watched_seconds||0, duration:r.duration_seconds||null, completed:!!r.completed }; });
+  myViewed=new Set(Object.keys(myProgress));
+}
+
+/* =================== 画面描画 =================== */
+function renderSetupNeeded(){
+  app.innerHTML = `<div class="setup-warn">
+    <h2 style="margin:0 0 8px">セットアップが未完了です</h2>
+    <p>このファイル上部の <code>SUPABASE_URL</code> と <code>SUPABASE_ANON_KEY</code> を、ご自身の Supabase プロジェクトの値に書き換えてから再アップロードしてください。</p>
+  </div>`;
+}
+
+function header(){
+  return `<div class="header">
+    <div class="brand"><span class="mark"></span><span class="brand-name">${esc(PORTAL_NAME)}</span></div>
+    <div class="header-right">
+      ${me? `<span class="who">${esc(myName||me.email)} さん</span>`:''}
+      ${isAdmin? `<button class="btn ghost sm" id="admin-btn">管理</button>`:''}
+      ${me? `<button class="btn ghost sm" id="logout-btn">ログアウト</button>`:''}
+    </div>
+  </div>`;
+}
+
+let authMode='login'; // 'login' or 'signup'
+function renderLogin(){
+  const isSignup = authMode==='signup';
+  app.innerHTML = `${header()}
+    <div class="auth-box">
+      <h2>${isSignup?'新規登録':'ログイン'}</h2>
+      <p class="muted">${isSignup?'初めての方は、メールアドレスとパスワードを決めて登録してください。':'メールアドレスとパスワードを入力してください。'}</p>
+      <div class="card-panel">
+        <input class="input" id="email" type="email" placeholder="you@example.com" autocomplete="email" />
+        <input class="input" id="password" type="password" placeholder="パスワード（6文字以上）" autocomplete="${isSignup?'new-password':'current-password'}" />
+        <div id="login-msg"></div>
+        <button class="btn primary block" id="auth-btn">${isSignup?'登録してはじめる':'ログイン'}</button>
+        <p class="hint">${isSignup
+          ? '<span id="to-login" style="color:var(--primary);cursor:pointer;text-decoration:underline">すでに登録済みの方はこちら</span>'
+          : '<span id="to-signup" style="color:var(--primary);cursor:pointer;text-decoration:underline">初めての方はこちら（新規登録）</span>'}</p>
+      </div>
+    </div>`;
+  const emailEl=document.getElementById('email');
+  const pwEl=document.getElementById('password');
+  const btn=document.getElementById('auth-btn');
+  const msg=document.getElementById('login-msg');
+  const toSignup=document.getElementById('to-signup');
+  const toLogin=document.getElementById('to-login');
+  if(toSignup) toSignup.onclick=()=>{ authMode='signup'; renderLogin(); };
+  if(toLogin) toLogin.onclick=()=>{ authMode='login'; renderLogin(); };
+  const submit=async()=>{
+    const email=emailEl.value.trim();
+    const password=pwEl.value;
+    if(!email){ msg.innerHTML='<p class="err">メールアドレスを入力してください。</p>'; return; }
+    if(!password || password.length<6){ msg.innerHTML='<p class="err">パスワードは6文字以上で入力してください。</p>'; return; }
+    btn.disabled=true; msg.innerHTML='<p class="muted sm">処理中…</p>';
+    if(isSignup){
+      const { data, error }=await sb.auth.signUp({ email, password });
+      btn.disabled=false;
+      if(error){
+        const dup=/already|registered|exists/i.test(error.message);
+        msg.innerHTML=`<p class="err">${dup?'このメールアドレスは登録済みです。「すでに登録済みの方はこちら」からログインしてください。':'登録に失敗しました：'+esc(error.message)}</p>`;
+        return;
+      }
+      if(data && data.session){ return; } // 自動ログイン（メール確認オフ時）→ onAuthStateChange が処理
+      msg.innerHTML='<p class="ok">登録を受け付けました。確認メールが届いた場合はリンクを開いてから、ログインしてください。</p>';
+    } else {
+      const { error }=await sb.auth.signInWithPassword({ email, password });
+      btn.disabled=false;
+      if(error){
+        const bad=/invalid login credentials/i.test(error.message);
+        msg.innerHTML=`<p class="err">${bad?'メールアドレスまたはパスワードが違います。初めての方は「新規登録」から登録してください。':'ログインに失敗しました：'+esc(error.message)}</p>`;
+        return;
+      }
+      // 成功時は onAuthStateChange が画面を切り替える
+    }
+  };
+  btn.onclick=submit;
+  pwEl.addEventListener('keydown',e=>{ if(e.key==='Enter') submit(); });
+  emailEl.addEventListener('keydown',e=>{ if(e.key==='Enter') pwEl.focus(); });
+}
+
+function renderMain(){
+  const total=videos.length;
+  const doneN=videos.filter(v=>myProgress[v.id]&&myProgress[v.id].completed).length;
+  const pct=total?Math.round(doneN/total*100):0;
+  const progress = (total>0)? `<div class="progress-wrap">
+      <div class="progress-label"><span>あなたの視聴状況</span><strong>${doneN} / ${total} 教材 完了</strong></div>
+      <div class="bar"><div class="bar-fill" style="width:${pct}%"></div></div>
+    </div>`:'';
+  let body;
+  if(total===0){
+    body = `<div class="empty">
+      <div class="empty-mark">＋</div>
+      <h2>教材がまだありません</h2>
+      <p class="muted">${isAdmin?'「管理」から YouTube / Vimeo の動画を追加してください。':'教材が追加されるまでお待ちください。'}</p>
+    </div>`;
+  } else {
+    body = `<div class="grid">${videos.map(cardHtml).join('')}</div>`;
+  }
+  app.innerHTML = header()+progress+body;
+  bindHeader();
+  if(total>0){ document.querySelectorAll('[data-open]').forEach(el=>{ el.onclick=()=>openVideo(el.dataset.open); }); }
+  if(needName()) askName();
+  else { const nm=document.getElementById('name-modal'); if(nm) nm.remove(); }
+}
+function cardHtml(v){
+  const t=thumbSrc(v); const p=myProgress[v.id];
+  const done=p&&p.completed, started=p&&p.watched>0;
+  const wm=p?Math.floor((p.watched||0)/60):0;
+  const dm=p&&p.duration?Math.round(p.duration/60):null;
+  const pct=p&&p.duration?Math.min(100,Math.round((p.watched||0)/p.duration*100)):0;
+  const tag=done?`<span class="viewed-tag">完了</span>`:(started?`<span class="viewed-tag" style="background:#5c6b7a">視聴中</span>`:'');
+  const meta=dm?`<span class="provider">${wm}分 / ${dm}分</span>`:`<span class="provider">${v.provider==='youtube'?'YouTube':'Vimeo'}</span>`;
+  return `<button class="card" data-open="${v.id}">
+    <div class="thumb">
+      ${t?`<img src="${t}" alt="" loading="lazy" />`:`<div class="thumb-fallback"><span>Vimeo</span></div>`}
+      <span class="play">▶</span>${tag}
+    </div>
+    <div class="card-body">
+      <h3 class="card-title">${esc(v.title)}</h3>
+      <div class="card-meta">${meta}${done?'':(p&&p.duration?`<span class="count-badge sm">${pct}%</span>`:'')}</div>
+      ${started&&!done?`<div class="bar" style="margin-top:8px"><div class="bar-fill" style="width:${pct}%"></div></div>`:''}
+    </div>
+  </button>`;
+}
+
+async function openVideo(id){
+  selected=videos.find(v=>v.id===id); if(!selected) return;
+  const prev=myProgress[selected.id]||{watched:0,duration:null,completed:false};
+  app.innerHTML = header()+`<div class="player-view">
+    <button class="btn ghost sm back" id="back-btn">← 一覧に戻る</button>
+    <div class="player-frame"><div id="player-host"></div></div>
+    <div class="player-head"><h2 class="player-title">${esc(selected.title)}</h2>
+      <span class="count-badge lg" id="time-badge">—</span></div>
+    <div class="bar" style="margin-top:10px"><div class="bar-fill" id="watch-bar" style="width:0%"></div></div>
+    <p class="muted sm" id="watch-note">再生した時間が記録され、動画の長さに達すると「完了」になります。</p>
+  </div>`;
+  bindHeader();
+  document.getElementById('back-btn').onclick=()=>{ stopTracking(true); selected=null; renderMain(); };
+  startPlayer(selected, prev);
+}
+
+/* ---- 再生時間トラッキング ---- */
+let ytReady=null, vimeoReady=null;
+function loadYT(){
+  if(window.YT && window.YT.Player) return Promise.resolve();
+  if(ytReady) return ytReady;
+  ytReady=new Promise(res=>{
+    const prev=window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady=()=>{ try{prev&&prev();}catch(e){} res(); };
+    const s=document.createElement('script'); s.src='https://www.youtube.com/iframe_api'; document.head.appendChild(s);
+  });
+  return ytReady;
+}
+function loadVimeo(){
+  if(window.Vimeo && window.Vimeo.Player) return Promise.resolve();
+  if(vimeoReady) return vimeoReady;
+  vimeoReady=new Promise(res=>{ const s=document.createElement('script'); s.src='https://player.vimeo.com/api/player.js'; s.onload=()=>res(); document.head.appendChild(s); });
+  return vimeoReady;
+}
+async function startPlayer(v, prev){
+  track={ video:v, accumulated:prev.watched||0, duration:prev.duration||null, completed:!!prev.completed, tick:null, lastSave:0, dirty:false, player:null };
+  updateWatchUI();
+  saveProgress(); // 開いた時点で「視聴開始」を記録
+  try{
+    if(v.provider==='youtube'){
+      await loadYT();
+      if(!track||track.video.id!==v.id) return;
+      track.player=new YT.Player('player-host',{ width:'100%', height:'100%', videoId:v.video_id,
+        playerVars:{rel:0, modestbranding:1, playsinline:1},
+        events:{
+          onReady:(e)=>{ const d=Math.round(e.target.getDuration()||0); if(d>0&&track){track.duration=d; updateWatchUI();} },
+          onStateChange:(e)=>{ if(!track)return;
+            if(e.data===YT.PlayerState.PLAYING){ if(!track.duration){const d=Math.round(e.target.getDuration()||0); if(d>0)track.duration=d;} startTick(); }
+            else { stopTick(); saveProgress(); } }
+        } });
+    } else {
+      await loadVimeo();
+      if(!track||track.video.id!==v.id) return;
+      const host=document.getElementById('player-host'); if(!host) return;
+      const iframe=document.createElement('iframe'); iframe.src=`https://player.vimeo.com/video/${v.video_id}`;
+      iframe.allow='autoplay; fullscreen; picture-in-picture'; iframe.setAttribute('allowfullscreen','');
+      host.appendChild(iframe);
+      const p=new Vimeo.Player(iframe); track.player=p;
+      p.getDuration().then(d=>{ d=Math.round(d||0); if(d>0&&track){track.duration=d; updateWatchUI();} }).catch(()=>{});
+      p.on('play',()=>startTick());
+      p.on('pause',()=>{ stopTick(); saveProgress(); });
+      p.on('ended',()=>{ stopTick(); saveProgress(); });
+    }
+  }catch(e){ const n=document.getElementById('watch-note'); if(n) n.textContent='プレーヤーの読み込みに失敗しました。通信環境をご確認ください。'; }
+}
+function startTick(){
+  if(!track||track.tick) return;
+  track.tick=setInterval(()=>{
+    if(!track) return;
+    track.accumulated=Math.min((track.accumulated||0)+1, track.duration||1e9);
+    track.dirty=true;
+    if(track.duration && !track.completed && track.accumulated>=track.duration){ track.completed=true; saveProgress(); }
+    updateWatchUI();
+    if(Date.now()-track.lastSave>15000) saveProgress();
+  },1000);
+}
+function stopTick(){ if(track&&track.tick){ clearInterval(track.tick); track.tick=null; } }
+function stopTracking(save){ stopTick(); if(save&&track) saveProgress();
+  try{ if(track&&track.player&&track.video.provider==='youtube'&&track.player.destroy) track.player.destroy(); }catch(e){}
+  try{ if(track&&track.player&&track.video.provider==='vimeo'&&track.player.unload) track.player.unload(); }catch(e){}
+  track=null; }
+async function saveProgress(){
+  if(!track||!me) return;
+  track.lastSave=Date.now(); track.dirty=false;
+  const w=Math.round(track.accumulated||0);
+  myProgress[track.video.id]={ watched:w, duration:track.duration||null, completed:!!track.completed };
+  try{ await sb.from('views').upsert({ user_id:me.id, video_id:track.video.id, watched_seconds:w, duration_seconds:track.duration||null, completed:!!track.completed, updated_at:new Date().toISOString() },{onConflict:'user_id,video_id'}); }catch(e){}
+}
+function updateWatchUI(){
+  const badge=document.getElementById('time-badge'); const bar=document.getElementById('watch-bar'); const note=document.getElementById('watch-note');
+  if(!badge||!track) return;
+  const w=Math.round(track.accumulated||0), d=track.duration||0;
+  const wm=Math.floor(w/60), dm=d?Math.round(d/60):0;
+  if(d){
+    const pct=Math.min(100,Math.round(w/d*100));
+    badge.textContent=track.completed?'完了':`${wm}分 / ${dm}分`;
+    badge.style.background=track.completed?'var(--primary)':'#fdeaf1';
+    badge.style.color=track.completed?'#fff':'var(--accent)';
+    if(bar) bar.style.width=pct+'%';
+    if(note) note.textContent=track.completed?'この教材は視聴完了しました。':`あと約${Math.max(0,Math.ceil((d-w)/60))}分で完了します。`;
+  } else { badge.textContent=`${wm}分`; }
+}
+
+function bindHeader(){
+  const a=document.getElementById('admin-btn'); if(a) a.onclick=openAdmin;
+  const l=document.getElementById('logout-btn'); if(l) l.onclick=async()=>{ await sb.auth.signOut(); };
+}
+
+/* ---- 表示名の設定 ---- */
+function needName(){ return !myName; }
+function askName(){
+  if(document.getElementById('name-modal')) return; // 既に表示中なら二重に出さない
+  const box=document.createElement('div');
+  box.id='name-modal';
+  box.className='overlay';
+  box.innerHTML=`<div class="modal narrow">
+    <h2 class="modal-title">お名前・会社・所属を入力してください</h2>
+    <p class="muted">受講記録に表示されます（後から変更可）。</p>
+    <input class="input" id="name-in" placeholder="氏名（例：山田 太郎）" />
+    <input class="input" id="company-in" placeholder="会社名（例：〇〇株式会社）" />
+    <input class="input" id="dept-in" placeholder="所属・部署（任意／例：食品売場 生鮮）" />
+    <div class="modal-actions">
+      <button class="btn ghost" id="name-skip">スキップ</button>
+      <button class="btn primary" id="name-save">保存</button>
+    </div></div>`;
+  document.body.appendChild(box);
+  const inp=box.querySelector('#name-in'); inp.focus();
+  const close=()=>box.remove();
+  box.querySelector('#name-skip').onclick=()=>{ myName=' '; close(); }; // スキップ時は再表示しない
+  const save=async()=>{
+    const name=inp.value.trim(); const company=box.querySelector('#company-in').value.trim(); const dept=box.querySelector('#dept-in').value.trim();
+    if(!name){ close(); return; }
+    await sb.from('profiles').upsert({user_id:me.id, display_name:name, company:company||null, department:dept||null, email:me.email, updated_at:new Date().toISOString()},{onConflict:'user_id'});
+    myName=name; myCompany=company; myDept=dept; close(); renderMain();
+  };
+  box.querySelector('#name-save').onclick=save;
+  inp.addEventListener('keydown',e=>{ if(e.key==='Enter') save(); });
+}
+
+/* ---- 進捗率（教材ごとに何％視聴したか）---- */
+function progressPct(rec, v, canonDur){
+  const r=rec&&rec[v.id];
+  if(r&&r.completed) return 100;
+  const d=(canonDur&&canonDur[v.id]) || (r&&r.duration) || 0;
+  if(!r || !d) return 0;
+  return Math.min(100, Math.round((r.watched||0)/d*100));
+}
+
+/* ---- CSV出力ヘルパー ---- */
+function csvCell(v){ const s=String(v==null?'':v); return /[",\r\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s; }
+function exportProgressCsv(learners, canonDur, deadline){
+  const header=['氏名','会社','所属','ステータス','進捗率','学習時間','最終受講日','受講期限'];
+  const rows=learners.map(s=>[s.display_name||'', s.company||'', s.department||'', s.status||'', s.overall+'%', s.secs?fmtHMS(s.secs):'', s.last?String(s.last).slice(0,10):'', deadline||'']);
+  const csv=[header,...rows].map(r=>r.map(csvCell).join(',')).join('\r\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='受講者進捗_'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href);
+}
+
+/* ---- 管理ダッシュボード ---- */
+function fmtHMS(sec){ sec=Math.round(sec||0); const h=Math.floor(sec/3600), m=Math.floor(sec%3600/60), s=sec%60; const z=n=>(n<10?'0':'')+n; return z(h)+':'+z(m)+':'+z(s); }
+function learnerStatus(s, total, deadline){
+  if(total>0 && s.watched>=total) return '完了';
+  if(deadline){ const today=new Date(); today.setHours(0,0,0,0); const dl=new Date(deadline+'T00:00:00');
+    if(today>dl) return '期限超過';
+    if((dl-today)/86400000 <= 7) return '督促候補'; }
+  return s.overall>0 ? '受講中' : '未着手';
+}
+const STATUS_STYLE={'完了':'background:#e3f6ec;color:#1a7f4b','期限超過':'background:#fdecec;color:#c0392b','督促候補':'background:#fff4e0;color:#9a6a00','受講中':'background:#ece9fb;color:#5b4ad0','未着手':'background:#eef1f4;color:#5c6b7a'};
+function statusBadge(st){ return `<span style="${STATUS_STYLE[st]||''};font-size:12px;font-weight:700;padding:3px 10px;border-radius:7px;white-space:nowrap">${st}</span>`; }
+let adminFilter='all';
+async function openAdmin(){ await renderAdminDashboard(); }
+
+async function renderAdminDashboard(){
+  app.innerHTML = header()+`<div id="dash"><p class="muted center" style="margin-top:40px">読み込み中…</p></div>`;
+  bindHeader();
+  const dash=document.getElementById('dash');
+  const { data:allViews } = await sb.from('views').select('user_id, video_id, watched_seconds, duration_seconds, completed, updated_at');
+  const { data:profilesData } = await sb.from('profiles').select('*');
+  const total=videos.length;
+  const counts={}; (allViews||[]).forEach(r=>{ counts[r.video_id]=(counts[r.video_id]||0)+1; });
+  const byUser={}; (allViews||[]).forEach(r=>{ const u=byUser[r.user_id]=byUser[r.user_id]||{recs:{},secs:0,last:null}; u.recs[r.video_id]={watched:r.watched_seconds||0,duration:r.duration_seconds||null,completed:!!r.completed}; u.secs+=r.watched_seconds||0; if(r.updated_at && (!u.last||r.updated_at>u.last)) u.last=r.updated_at; });
+  const canonDur={}; videos.forEach(v=>{ let d=0; (allViews||[]).forEach(r=>{ if(r.video_id===v.id && r.duration_seconds) d=Math.max(d,r.duration_seconds); }); canonDur[v.id]=d||null; });
+  const learners=(profilesData||[]).map(p=>{
+    const u=byUser[p.user_id]||{recs:{},secs:0,last:null}; const rec=u.recs;
+    const doneVids=videos.filter(v=>rec[v.id]&&rec[v.id].completed).length;
+    const overall= total? Math.round(videos.reduce((a,v)=>a+progressPct(rec,v,canonDur),0)/total) : 0;
+    const status=learnerStatus({watched:doneVids,overall}, total, portalDeadline);
+    return {...p, rec, watched:doneVids, overall, secs:u.secs, last:u.last, done:total>0&&doneVids>=total, status};
+  }).sort((a,b)=> (a.overall-b.overall) || String(a.display_name||a.email||'').localeCompare(String(b.display_name||b.email||''),'ja'));
+  const companies=[...new Set(learners.map(l=>(l.company||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ja'));
+  if(adminCompany!=='all' && !companies.includes(adminCompany)) adminCompany='all';
+  const scoped= adminCompany==='all'? learners : learners.filter(l=>(l.company||'')===adminCompany);
+  const doneCount=scoped.filter(s=>s.done).length;
+  const rate= scoped.length? Math.round(doneCount/scoped.length*100):0;
+  const overdue=scoped.filter(s=>s.status==='期限超過').length;
+  const cnt={}; ['完了','期限超過','督促候補','受講中','未着手'].forEach(k=>cnt[k]=scoped.filter(l=>l.status===k).length);
+  const tabs=[['all','すべて',scoped.length],['期限超過','期限超過',cnt['期限超過']],['督促候補','督促候補',cnt['督促候補']],['受講中','受講中',cnt['受講中']],['未着手','未着手',cnt['未着手']],['完了','完了',cnt['完了']]];
+  const shown= adminFilter==='all'? scoped : scoped.filter(l=>l.status===adminFilter);
+  const d10=d=> d? String(d).slice(0,10):'-';
+
+  dash.innerHTML=`
+    <button class="btn ghost sm back" id="dash-back">← 一覧に戻る</button>
+    <div class="dash-head">
+      <h1 class="dash-title">${esc(PORTAL_NAME)} 受講状況</h1>
+      <button class="btn primary sm" id="remind-btn">✉ 督促メール送信</button>
+    </div>
+    <p class="muted sm" style="margin:2px 0 14px">受講者ごとの進捗・ステータスの一覧です。氏名をクリックすると教材ごとの詳細が開きます。</p>
+    ${companies.length? `<div style="margin-bottom:14px"><label class="sm muted" style="margin-right:8px">会社で絞り込み</label>
+      <select id="company-sel" class="input" style="width:auto;display:inline-block;padding:7px 10px;margin:0;font-size:14px">
+        <option value="all"${adminCompany==='all'?' selected':''}>すべての会社（${learners.length}名）</option>
+        ${companies.map(c=>`<option value="${esc(c)}"${adminCompany===c?' selected':''}>${esc(c)}（${learners.filter(l=>(l.company||'')===c).length}名）</option>`).join('')}
+      </select></div>`:''}
+    <div class="stat-row">
+      <div class="stat-card"><div class="stat-label">受講者数</div><div class="stat-num">${scoped.length}<span class="stat-unit">名</span></div></div>
+      <div class="stat-card"><div class="stat-label">完了率</div><div class="stat-num">${rate}<span class="stat-unit">%</span></div><div class="stat-sub">${doneCount} / ${scoped.length} 名</div></div>
+      <div class="stat-card"><div class="stat-label" style="color:var(--accent)">⚠ 要対応</div><div class="stat-num" style="color:var(--accent)">${overdue}<span class="stat-unit">名</span></div><div class="stat-sub">が期限超過</div></div>
+      <div class="stat-card"><div class="stat-label">受講期限</div><input type="date" id="deadline-in" value="${portalDeadline||''}" class="input" style="margin:4px 0 0;padding:6px 8px;font-size:13px" /></div>
+    </div>
+    <div class="filter-tabs">${tabs.map(t=>`<button class="ftab ${adminFilter===t[0]?'active':''}" data-f="${t[0]}">${t[1]} ${t[2]}</button>`).join('')}</div>
+    ${total===0? '<p class="muted" style="margin:16px 0">先に下の「教材管理」から教材を追加してください。</p>' :
+      scoped.length===0? `<p class="muted" style="margin:16px 0">${adminCompany==='all'?'まだログインした受講者がいません。':'この会社の受講者はいません。'}</p>` :
+      `<div class="table-wrap"><table class="dash-table">
+        <thead><tr><th>#</th><th>氏名</th><th>会社</th><th>所属</th><th>ステータス</th><th>進捗率</th><th>学習時間</th><th>最終受講日</th><th>受講期限</th><th>操作</th></tr></thead>
+        <tbody>${shown.map((s,i)=>`
+          <tr class="lrow" data-u="${s.user_id}">
+            <td class="muted">${i+1}</td>
+            <td class="name-cell" style="font-weight:600;cursor:pointer">${esc(s.display_name||'（名前未設定）')}</td>
+            <td class="muted">${esc(s.company||'-')}</td>
+            <td class="muted">${esc(s.department||'-')}</td>
+            <td>${statusBadge(s.status)}</td>
+            <td style="font-weight:600">${s.overall}%</td>
+            <td class="muted">${s.secs?fmtHMS(s.secs):'-'}</td>
+            <td class="muted">${d10(s.last)}</td>
+            <td class="muted">${portalDeadline||'-'}</td>
+            <td>${s.done?`<button class="btn ghost sm" data-cert="${s.user_id}">修了証</button>`:''}</td>
+          </tr>
+          <tr class="detail-row" id="d-${s.user_id}" style="display:none"><td colspan="10" style="background:var(--surface);padding:10px 14px">
+            ${videos.map(v=>{ const p=progressPct(s.rec,v,canonDur); return `<div style="display:flex;align-items:center;gap:10px;margin:4px 0;max-width:520px">
+              <span class="sm" style="flex:1">${esc(v.title)}</span>
+              <div class="bar" style="width:140px"><div class="bar-fill" style="width:${p}%"></div></div>
+              <span class="sm" style="min-width:38px;text-align:right;font-weight:600">${p}%</span></div>`; }).join('')}
+          </td></tr>`).join('')}</tbody>
+      </table></div>
+      <div style="margin-top:10px"><button class="btn ghost sm" id="csv-dl">CSV ダウンロード</button></div>`}
+    <div class="admin-section" style="margin-top:28px;border-top:1px solid var(--line);padding-top:20px">
+      <h3>教材管理</h3>
+      <input class="input" id="v-title" placeholder="タイトル（例：第1回 オリエンテーション）" />
+      <input class="input" id="v-url" placeholder="YouTube または Vimeo のURL" />
+      <div id="v-msg"></div>
+      <button class="btn primary" id="v-add">教材を追加</button>
+      ${videos.length?`<ul class="admin-list" style="margin-top:14px">${videos.map(v=>`
+        <li><div class="row"><span class="row-title">${esc(v.title)}</span>
+          <span class="count-badge sm">👁 ${counts[v.id]||0}</span>
+          <button class="link danger" data-del="${v.id}">削除</button></div></li>`).join('')}</ul>`:''}
+    </div>`;
+
+  document.getElementById('dash-back').onclick=()=>{ adminFilter='all'; renderMain(); };
+  dash.querySelectorAll('.ftab').forEach(b=>{ b.onclick=()=>{ adminFilter=b.dataset.f; renderAdminDashboard(); }; });
+  const cSel=document.getElementById('company-sel');
+  if(cSel) cSel.onchange=()=>{ adminCompany=cSel.value; adminFilter='all'; renderAdminDashboard(); };
+  dash.querySelectorAll('.name-cell').forEach(c=>{ c.onclick=()=>{ const u=c.closest('.lrow').dataset.u; const dr=document.getElementById('d-'+u); if(dr) dr.style.display= dr.style.display==='none'?'table-row':'none'; }; });
+  const dIn=document.getElementById('deadline-in');
+  if(dIn) dIn.onchange=async()=>{ const val=dIn.value||null; try{ await sb.from('settings').update({deadline:val, updated_at:new Date().toISOString()}).eq('id',1); }catch(e){} portalDeadline=val; renderAdminDashboard(); };
+  const rem=document.getElementById('remind-btn');
+  if(rem) rem.onclick=()=>{
+    const targets=scoped.filter(l=>['期限超過','督促候補','未着手'].includes(l.status)).map(l=>l.email).filter(Boolean);
+    if(!targets.length){ alert('督促対象（期限超過・督促候補・未着手）の受講者はいません。'); return; }
+    const subject=encodeURIComponent('【受講のお願い】研修動画の視聴期限が近づいています');
+    const body=encodeURIComponent('お疲れさまです。\n研修動画の視聴がまだ完了していません。\n受講ポータルにログインのうえ、期限までに視聴をお願いします。\n\n'+location.origin+location.pathname);
+    location.href='mailto:?bcc='+encodeURIComponent(targets.join(','))+'&subject='+subject+'&body='+body;
+  };
+  dash.querySelectorAll('[data-cert]').forEach(b=>{ b.onclick=()=>{ const s=learners.find(l=>l.user_id===b.dataset.cert); if(s) showCertificate(s); }; });
+  const csvBtn=document.getElementById('csv-dl'); if(csvBtn) csvBtn.onclick=()=>exportProgressCsv(scoped, canonDur, portalDeadline);
+  const addBtn=document.getElementById('v-add');
+  if(addBtn) addBtn.onclick=async()=>{
+    const title=document.getElementById('v-title').value.trim(); const url=document.getElementById('v-url').value.trim();
+    const msg=document.getElementById('v-msg'); const parsed=parseVideo(url);
+    if(!title){ msg.innerHTML='<p class="err">タイトルを入力してください。</p>'; return; }
+    if(!parsed){ msg.innerHTML='<p class="err">URLを認識できませんでした。YouTube か Vimeo のリンクを貼ってください。</p>'; return; }
+    const { error }=await sb.from('videos').insert({title, provider:parsed.provider, video_id:parsed.video_id, position:videos.length});
+    if(error){ msg.innerHTML=`<p class="err">追加に失敗しました：${esc(error.message)}</p>`; return; }
+    await loadVideos(); renderAdminDashboard();
+  };
+  dash.querySelectorAll('[data-del]').forEach(b=>{ b.onclick=async()=>{ await sb.from('videos').delete().eq('id',b.dataset.del); await loadVideos(); await loadMyViews(); renderAdminDashboard(); }; });
+}
+
+function showCertificate(s){
+  const ov=document.createElement('div'); ov.className='overlay cert-overlay';
+  ov.onmousedown=(e)=>{ if(e.target===ov) ov.remove(); };
+  const t=new Date(); const ymd=t.getFullYear()+'年'+(t.getMonth()+1)+'月'+t.getDate()+'日';
+  ov.innerHTML=`<div class="modal narrow" style="max-width:520px">
+    <div class="cert-print" style="border:3px solid var(--primary);border-radius:12px;padding:32px 28px;text-align:center">
+      <div style="font-size:12px;letter-spacing:.3em;color:var(--muted)">CERTIFICATE</div>
+      <h2 style="margin:10px 0 4px;font-size:22px">修 了 証</h2>
+      <p class="muted sm" style="margin:0 0 22px">${esc(PORTAL_NAME)}</p>
+      <p style="font-size:20px;font-weight:700;margin:0 0 4px">${esc(s.display_name||s.email||'')} 様</p>
+      <p class="muted sm" style="margin:0 0 20px">${esc(s.department||'')}</p>
+      <p class="sm" style="line-height:1.9">上記の方は、本ポータルのすべての研修動画を<br>最後まで視聴し、修了されたことを証します。</p>
+      <p class="muted sm" style="margin-top:22px">${ymd}</p>
+    </div>
+    <div class="modal-actions"><button class="btn ghost" id="cert-close">閉じる</button><button class="btn primary" id="cert-print">印刷 / PDF保存</button></div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.querySelector('#cert-close').onclick=()=>ov.remove();
+  ov.querySelector('#cert-print').onclick=()=>window.print();
+}
+document.addEventListener('visibilitychange',()=>{ if(document.hidden && track && track.dirty) saveProgress(); });
+window.addEventListener('pagehide',()=>{ if(track && track.dirty) saveProgress(); });
+
+init();
+</script>
+</body>
+</html>
